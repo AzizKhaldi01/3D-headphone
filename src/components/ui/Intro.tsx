@@ -28,7 +28,7 @@ export const Intro = () => {
             </div>
 
             {/* 3D Model Container */}
-            <div className=" -z-10">
+            <div id="model-section" className=" -z-10">
               <IntroScene />
             </div>
           </div>

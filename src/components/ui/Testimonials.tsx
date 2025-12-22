@@ -2,6 +2,9 @@
 import { Canvas } from "@react-three/fiber";
 import Model from "../ScenePs5";
 import Image from "next/image";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const testimonialData = [
   {
@@ -46,31 +49,31 @@ const testimonialData = [
   }
 ];
 
-export const TestimonialCard = ({ 
-  name, 
-  username, 
-  rating, 
-  text, 
-  platform, 
+export const TestimonialCard = ({
+  name,
+  username,
+  rating,
+  text,
+  platform,
   avatar,
   className = ''
-}: { 
-  name: string; 
-  username?: string; 
-  rating: number; 
-  text: string; 
+}: {
+  name: string;
+  username?: string;
+  rating: number;
+  text: string;
   platform: string;
   avatar: string;
   className?: string;
 }) => {
   return (
-    <div className={`bg-[#111111] rounded-2xl p-6 flex flex-col gap-4 ${className}`}>
+    <div className={`testimonial-card bg-[#111111] rounded-2xl p-6 flex flex-col gap-4 ${className}`}>
       <div className="flex items-center gap-4">
-        <Image 
-          src={avatar} 
-          alt={name} 
-          width={48} 
-          height={48} 
+        <Image
+          src={avatar}
+          alt={name}
+          width={48}
+          height={48}
           className="rounded-full object-cover"
         />
         <div>
@@ -108,14 +111,105 @@ export const TestimonialCard = ({
 };
 
 export const Testimonials = () => {
+  const containerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const ctx = gsap.context(() => {
+      // Header Animation
+      gsap.from(".testimonial-header > *", {
+        y: 50,
+        opacity: 0,
+        duration: 1,
+        stagger: 0.2,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: ".testimonial-header",
+          start: "top 80%",
+        }
+      });
+
+      // Parallax Column Animations
+      // Left Column - Moves slower
+      gsap.to(".testimonial-col-left", {
+        y: 100,
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.5,
+        }
+      });
+
+      // Center Column - Moves faster (creates depth)
+      gsap.to(".testimonial-col-center", {
+        y: -150,
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.5,
+        }
+      });
+
+      // Right Column - Moves like left but slightly offset
+      gsap.to(".testimonial-col-right", {
+        y: 50,
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.5,
+        }
+      });
+
+      // Cards Scale In (Entry Animation)
+      gsap.from(".testimonial-card", {
+        scale: 0.8,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.1,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ".testimonials-grid",
+          start: "top 75%",
+        }
+      });
+
+      // Controller Animation
+      gsap.from(".fade-in-section", {
+        y: 50,
+        opacity: 0,
+        duration: 1,
+        scrollTrigger: {
+          trigger: ".fade-in-section",
+          start: "top 80%",
+        }
+      });
+
+      // Floating effect for controller
+      gsap.to(".fade-in-section img", {
+        y: -20,
+        duration: 2,
+        repeat: -1,
+        yoyo: true,
+        ease: "power1.inOut"
+      });
+
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section className="py-20 bg-black min-h-screen relative">
+    <section ref={containerRef} className="py-20 bg-black min-h-screen relative overflow-hidden">
       {/* Header Content */}
-      <div className="text-center mb-20">
+      <div className="testimonial-header text-center mb-20">
         <h2 className="text-white text-6xl font-medium mb-6">Testimonials</h2>
         <p className="text-gray-400 max-w-2xl mx-auto mb-8">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
-          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut 
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
           enim ad minim veniam.
         </p>
         <button className="px-8 py-3 rounded-full border border-gray-600 text-gray-400 hover:text-white hover:border-white transition-colors">
@@ -124,7 +218,7 @@ export const Testimonials = () => {
       </div>
 
       {/* 3D Model Container */}
-      <div className="relative w-full h-[400px] mb-20">
+      <div className="relative w-full h-[400px] mb-20 fade-in-section">
         <Image
           src="/controller.png" // Make sure to add your controller image
           alt="PlayStation Controller"
@@ -135,26 +229,26 @@ export const Testimonials = () => {
       </div>
 
       {/* Testimonials Grid */}
-      <div className="container mx-auto px-4">
+      <div className="testimonials-grid container mx-auto px-4">
         <div className="flex justify-between gap-6">
           {/* Left Column */}
-          <div className="flex flex-col gap-6 w-[30%]">
+          <div className="testimonial-col-left flex flex-col gap-6 w-[30%]">
             <TestimonialCard {...testimonialData[0]} />
             <TestimonialCard {...testimonialData[1]} />
           </div>
-          
+
           {/* Center Column */}
-          <div className="w-[40%] h-full">
+          <div className="testimonial-col-center w-[40%] h-full">
             <div className="h-full">
-              <TestimonialCard 
-                {...testimonialData[2]} 
+              <TestimonialCard
+                {...testimonialData[2]}
                 className="h-full"
               />
             </div>
           </div>
-          
+
           {/* Right Column */}
-          <div className="flex flex-col gap-6 w-[30%]">
+          <div className="testimonial-col-right flex flex-col gap-6 w-[30%]">
             <TestimonialCard {...testimonialData[3]} />
             <TestimonialCard {...testimonialData[4]} />
           </div>
