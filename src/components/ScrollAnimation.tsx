@@ -2,7 +2,6 @@
 import { Canvas } from '@react-three/fiber'
 import { useFrame } from '@react-three/fiber'
 import { useRef, useLayoutEffect } from 'react'
-import { useScroll } from '@react-three/drei'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/dist/ScrollTrigger'
 import { Mesh } from 'three'
@@ -11,7 +10,7 @@ if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
 }
 
-function Model(props: any) {
+function Model(props: JSX.IntrinsicElements['mesh']) {
   const meshRef = useRef<Mesh>(null)
   const tl = useRef<GSAPTimeline>()
 
@@ -54,7 +53,7 @@ function Model(props: any) {
       })
   }, [])
 
-  useFrame((state) => {
+  useFrame(() => {
     if (!meshRef.current) return;
     meshRef.current.rotation.x += 0.001
     meshRef.current.rotation.y += 0.001
@@ -63,7 +62,7 @@ function Model(props: any) {
   return (
     <mesh {...props} ref={meshRef}>
       <torusKnotGeometry args={[1, 0.3, 128, 16]} />
-      <meshStandardMaterial 
+      <meshStandardMaterial
         color="#ff6b6b"
         metalness={0.5}
         roughness={0.2}
@@ -75,20 +74,20 @@ function Model(props: any) {
 export default function ScrollAnimation() {
   return (
     <div id="scroll-container" style={{ height: '400vh' }}>
-      <div style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        width: '100%', 
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
         height: '100vh',
         background: 'linear-gradient(180deg, #1a1a1a 0%, #000000 100%)'
       }}>
         <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
           <ambientLight intensity={0.5} />
-          <spotLight 
-            position={[10, 10, 10]} 
-            angle={0.15} 
-            penumbra={1} 
+          <spotLight
+            position={[10, 10, 10]}
+            angle={0.15}
+            penumbra={1}
             intensity={1}
           />
           <Model position={[0, 0, 0]} />

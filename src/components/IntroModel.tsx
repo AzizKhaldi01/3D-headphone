@@ -1,27 +1,26 @@
 'use client'
 import { Canvas } from "@react-three/fiber";
-import { useGLTF, useAnimations } from "@react-three/drei";
-import { Mesh, Material } from 'three';
+import { useGLTF } from "@react-three/drei";
+import { Mesh, Material, AnimationClip, Group } from 'three';
 import { useRef, useEffect } from 'react';
 
 interface ModelNodes {
   [key: string]: Mesh;
 }
 
-function HeadphoneModel(props: any) {
-  const { nodes, materials, animations } = useGLTF('/headphone3D.glb') as unknown as {
+function HeadphoneModel(props: JSX.IntrinsicElements['group']) {
+  const { nodes } = useGLTF('/headphone3D.glb') as unknown as {
     nodes: ModelNodes;
     materials: { [key: string]: Material };
-    animations: any[];
+    animations: AnimationClip[];
   };
 
-  const group = useRef<any>(null);
-  const { actions } = useAnimations(animations, group);
+  const group = useRef<Group>(null);
 
   useEffect(() => {
     let autoRotate = true;
     let animationId: number;
-    let startTime = Date.now();
+    const startTime = Date.now();
     const rotationDuration = 3000; // 3 seconds of auto-rotation
 
     const animate = () => {

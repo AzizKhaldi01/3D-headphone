@@ -3,7 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 import { gsap } from "gsap";
 import { useControls } from "leva";
-import { Environment, OrbitControls } from "@react-three/drei";
+import { Environment } from "@react-three/drei";
 import { Model } from "./SceneHeadPhone";
 import { useEffect, useRef } from "react";
 
@@ -13,11 +13,7 @@ if (typeof window !== "undefined") {
 
 export default function HeadphoneScene() {
   const containerRef = useRef(null);
-  const { bgColor1, bgColor2, bgColor3 } = useControls("Background", {
-    bgColor1: "#000000",
-    bgColor2: "#1a1a1a",
-    bgColor3: "#2a2a2a",
-  });
+
 
   const ambientLightControls = useControls("Ambient Light", {
     intensity: { value: 8.0, min: 0, max: 10, step: 0.1 },
@@ -560,6 +556,7 @@ export default function HeadphoneScene() {
         id="sound-section"
         className="min-h-screen relative bg-black text-white flex items-center justify-center"
       >
+        <div className="absolute -top-32 left-0 w-full h-32 bg-gradient-to-t from-[#e5e5e5] to-transparent pointer-events-none" />
         <div className="container mx-auto px-4 md:px-6 py-16 md:py-32 relative z-10">
           <div className="max-w-7xl mx-auto">
             {/* Section Header */}

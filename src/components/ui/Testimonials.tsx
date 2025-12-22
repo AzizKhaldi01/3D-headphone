@@ -1,6 +1,4 @@
 'use client'
-import { Canvas } from "@react-three/fiber";
-import Model from "../ScenePs5";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";

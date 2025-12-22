@@ -8,7 +8,7 @@ interface ModelNodes {
   [key: string]: Mesh;  // This makes all node properties of type Mesh
 }
 
-export function Model(props: any) {
+export function Model(props: JSX.IntrinsicElements['group']) {
   const group = useRef<THREE.Group>(null)
   const { nodes, materials, animations } = useGLTF('/headphone3D.glb') as unknown as {
     nodes: ModelNodes;
@@ -21,7 +21,7 @@ export function Model(props: any) {
     // Initial auto-rotation on load
     let autoRotate = true;
     let animationId: number;
-    let startTime = Date.now();
+    const startTime = Date.now();
     const rotationDuration = 2500; // 2.5 seconds of auto-rotation
 
     const animate = () => {
