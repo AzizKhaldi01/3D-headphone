@@ -1,6 +1,11 @@
 import React, { useEffect, useRef } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/dist/ScrollTrigger'
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 import { Mesh, Material } from 'three'
 import * as THREE from 'three'
 
@@ -22,17 +27,13 @@ export function Model(props: JSX.IntrinsicElements['group']) {
     let autoRotate = true;
     let animationId: number;
     const startTime = Date.now();
-    const rotationDuration = 2500; // 2.5 seconds of auto-rotation
+    const rotationDuration = 2500;
 
     const animate = () => {
       if (group.current && autoRotate) {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / rotationDuration, 1);
-
-        // Ease out function for smooth deceleration
         const easeOut = 1 - Math.pow(1 - progress, 3);
-
-        // Rotate with decreasing speed
         const rotationSpeed = (1 - easeOut) * 0.008;
         group.current.rotation.y += rotationSpeed;
 
@@ -44,7 +45,6 @@ export function Model(props: JSX.IntrinsicElements['group']) {
       }
     };
 
-    // Start auto-rotation
     animationId = requestAnimationFrame(animate);
 
     // Initialize animations
@@ -52,158 +52,104 @@ export function Model(props: JSX.IntrinsicElements['group']) {
       if (action) {
         action.clampWhenFinished = true;
         action.repetitions = 0;
-        action.timeScale = 0; // Set timeScale to 0 to prevent auto-playing
-        action.play(); // This puts the animation in a "ready" state
+        action.timeScale = 0;
+        action.play();
       }
-    })
+    });
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
+    const scrubValue = 4; // Increased for a smoother "lag" effect
+
+    // Unified Master Timeline for perfect reversibility
+    const timer = setTimeout(() => {
+      if (!group.current) return;
+
+      const stopAutoRotate = () => {
+        autoRotate = false;
+        cancelAnimationFrame(animationId);
+      };
+
+      // 1. Initial trigger to kill auto-rotate
+      ScrollTrigger.create({
         trigger: "#model-section",
-        start: "top center",
-        end: "+=400%",
-        scrub: 1.5,
-        onUpdate: (self) => {
-          // Update animation progress based on scroll position
-          Object.values(actions).forEach(action => {
-            if (action) {
-              // Set time directly proportional to scroll progress
-              action.time = action.getClip().duration * self.progress;
-            }
-          })
+        start: "top bottom",
+        onEnter: stopAutoRotate,
+        onEnterBack: stopAutoRotate,
+      });
+
+      // 2. The Master Animation Timeline
+      // Total weight: 2 units for the pinned section + 1 unit for each of the 5 following sections = 7 units
+      const totalWeight = 7;
+      const masterTL = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#model-section",
+          endTrigger: "#sustainability-section",
+          start: "top top",
+          end: "bottom bottom",
+          scrub: scrubValue,
+          invalidateOnRefresh: true,
+          onEnter: stopAutoRotate,
+          onEnterBack: stopAutoRotate,
         }
-      }
-    })
-
-    // Rotation animations for each section
-    const rotationTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: "#model-section",
-        start: "top top",
-        end: "bottom top",
-        scrub: 4,
-      }
-    });
-
-    // Two-stage rotation: 30% then 70%
-    if (group.current) {
-      rotationTimeline
-        // First movement - smaller rotation (will take 30% of scroll naturally)
-        .to(group.current.rotation, {
-          y: Math.PI * 0.25, // 45 degrees
-          x: -0.15,
-          ease: "none"
-        }, 0)
-        // Second movement - larger rotation (will take 70% of scroll naturally)
-        .to(group.current.rotation, {
-          y: Math.PI * 0.75, // 135 degrees total
-          x: 0.1,
-          ease: "none"
-        }, 0.3); // Start at 30% of timeline
-    }
-
-    // Section-specific rotations - slower and smoother
-    const soundSectionRotation = gsap.timeline({
-      scrollTrigger: {
-        trigger: "#sound-section",
-        start: "top bottom",
-        end: "bottom top",
-        scrub: 3,
-      }
-    });
-
-    if (group.current) {
-      soundSectionRotation.to(group.current.rotation, {
-        y: Math.PI * 0.5, // 90 degrees - show right side
-        x: -0.2,
-        ease: "power1.inOut"
       });
-    }
 
-    const comfortSectionRotation = gsap.timeline({
-      scrollTrigger: {
-        trigger: "#comfort-section",
-        start: "top bottom",
-        end: "bottom top",
-        scrub: 3,
-      }
-    });
+      // Unified State Chain (Reduced deltas and kept rotation unidirectional for smoothness)
+      const states = [
+        { p: 0, y: 0, x: 0, d: 0 },
+        { p: 2 / totalWeight, y: Math.PI * 0.4, x: 0.05, d: 1 },
+        { p: 3 / totalWeight, y: Math.PI * 0.8, x: -0.1, d: 1 },
+        { p: 4 / totalWeight, y: Math.PI * 1.2, x: 0.05, d: 1 },
+        { p: 5 / totalWeight, y: Math.PI * 1.6, x: -0.1, d: 1 },
+        { p: 6 / totalWeight, y: Math.PI * 2.0, x: 0.1, d: 1 },
+        { p: 1.0, y: Math.PI * 2.4, x: -0.05, d: 1 },
+      ];
 
-    if (group.current) {
-      comfortSectionRotation.to(group.current.rotation, {
-        y: Math.PI, // 180 degrees - show back
-        x: 0.1,
-        ease: "power1.inOut"
+      // Build the timeline by interpolating through these weights
+      states.forEach((state, i) => {
+        if (i === 0) return;
+        const prev = states[i - 1];
+        const duration = state.p - prev.p;
+
+        // Rotation
+        masterTL.to(group.current!.rotation, {
+          y: state.y,
+          x: state.x,
+          duration: duration,
+          ease: "none" // Use 'none' for constant interpolation between states
+        }, prev.p);
+
+        // Disassembly
+        const dProxy = { val: prev.d };
+        masterTL.to(dProxy, {
+          val: state.d,
+          duration: duration,
+          ease: "none",
+          onUpdate: () => {
+            Object.values(actions).forEach(action => {
+              if (action) {
+                action.time = action.getClip().duration * dProxy.val;
+              }
+            });
+          }
+        }, prev.p);
       });
-    }
 
-    const featuresSectionRotation = gsap.timeline({
-      scrollTrigger: {
-        trigger: "#features-section",
-        start: "top bottom",
-        end: "bottom top",
-        scrub: 3,
-      }
-    });
-
-    if (group.current) {
-      featuresSectionRotation.to(group.current.rotation, {
-        y: Math.PI * 1.5, // 270 degrees - show left side
-        x: -0.15,
-        ease: "power1.inOut"
-      });
-    }
-
-    // Section 5: Connectivity - 225 degrees
-    const connectivitySectionRotation = gsap.timeline({
-      scrollTrigger: {
-        trigger: "#connectivity-section",
-        start: "top bottom",
-        end: "bottom top",
-        scrub: 3,
-      }
-    });
-
-    if (group.current) {
-      connectivitySectionRotation.to(group.current.rotation, {
-        y: Math.PI * 1.25, // 225 degrees
-        x: 0.2,
-        ease: "power1.inOut"
-      });
-    }
-
-    // Section 6: Sustainability - 315 degrees
-    const sustainabilitySectionRotation = gsap.timeline({
-      scrollTrigger: {
-        trigger: "#sustainability-section",
-        start: "top bottom",
-        end: "bottom top",
-        scrub: 3,
-      }
-    });
-
-    if (group.current) {
-      sustainabilitySectionRotation.to(group.current.rotation, {
-        y: Math.PI * 1.75, // 315 degrees
-        x: -0.1,
-        ease: "power1.inOut"
-      });
-    }
+      ScrollTrigger.refresh();
+    }, 250);
 
     return () => {
-      cancelAnimationFrame(animationId)
-      tl.kill()
-      rotationTimeline.kill()
-      soundSectionRotation.kill()
-      comfortSectionRotation.kill()
-      featuresSectionRotation.kill()
-      connectivitySectionRotation.kill()
-      sustainabilitySectionRotation.kill()
+      clearTimeout(timer);
+      cancelAnimationFrame(animationId);
+      ScrollTrigger.getAll().forEach((st) => {
+        const triggers = ["#model-section", "#sound-section", "#comfort-section", "#features-section", "#connectivity-section", "#sustainability-section"];
+        if (triggers.includes(st.vars.trigger as string)) {
+          st.kill();
+        }
+      });
       Object.values(actions).forEach(action => {
-        if (action) action.stop()
-      })
-    }
-  }, [actions])
+        if (action) action.stop();
+      });
+    };
+  }, [actions]);
 
   return (
     <group ref={group} {...props} dispose={null}>

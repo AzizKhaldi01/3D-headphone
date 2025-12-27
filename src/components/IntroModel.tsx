@@ -2,7 +2,7 @@
 import { Canvas } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import { Mesh, Material, AnimationClip, Group } from 'three';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 interface ModelNodes {
   [key: string]: Mesh;
@@ -78,8 +78,8 @@ function HeadphoneModel(props: JSX.IntrinsicElements['group']) {
 
 export function IntroScene() {
   return (
-    <div className="w-full h-screen  z-30 absolute top-0 left-0">
-      <Canvas className="w-full h-screen" camera={{ position: [0, 0, 5], fov: 50 }}>
+    <div className="w-full h-[50vh] md:h-screen z-30 relative md:absolute top-0 left-0">
+      <Canvas className="w-full h-full" camera={{ position: [0, 0, 5], fov: 50 }}>
         <ambientLight intensity={8} />
         <directionalLight position={[5, 8, 3]} intensity={6} castShadow />
         <spotLight
@@ -90,12 +90,33 @@ export function IntroScene() {
           color="#b6e3ff"
           castShadow
         />
-        <HeadphoneModel
-          position={[0, 0, 0]}
-          rotation={[0, 0, 0]}
-          scale={0.045}
-        />
+        <ResponsiveHeadphoneModel />
       </Canvas>
     </div>
   );
-} 
+}
+
+function ResponsiveHeadphoneModel() {
+  const [currentScale, setCurrentScale] = useState(0.045);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setCurrentScale(0.03);
+      } else {
+        setCurrentScale(0.045);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <HeadphoneModel
+      position={[0, 0, 0]}
+      rotation={[0, 0, 0]}
+      scale={currentScale}
+    />
+  );
+}
